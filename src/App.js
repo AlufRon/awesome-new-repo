@@ -1,16 +1,30 @@
-import React from 'react';
+import React, { Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
+import { AnimatePresence } from 'framer-motion';
+
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import ThemeToggle from './components/ThemeToggle';
 import TerminalNav from './components/TerminalNav';
 import { AchievementSystem } from './components/AchievementSystem';
-import Home from './pages/Home';
-import About from './pages/About';
-import Skills from './pages/Skills';
-import Projects from './pages/Projects';
-import Experience from './pages/Experience';
-import Contact from './pages/Contact';
+import ErrorBoundary from './components/common/ErrorBoundary';
+import LoadingSpinner from './components/common/LoadingSpinner';
+import PageTransition from './components/common/PageTransition';
+
+// Lazy load pages for better performance
+const Home = React.lazy(() => import('./pages/Home'));
+const About = React.lazy(() => import('./pages/About'));
+const Skills = React.lazy(() => import('./pages/Skills'));
+const Projects = React.lazy(() => import('./pages/Projects'));
+const Experience = React.lazy(() => import('./pages/Experience'));
+const Contact = React.lazy(() => import('./pages/Contact'));
+
+// Loading fallback component
+const PageLoader = () => (
+  <div className="min-h-[60vh] flex items-center justify-center">
+    <LoadingSpinner size="lg" />
+  </div>
+);
 
 const AppContent = () => {
   const location = useLocation();
@@ -28,30 +42,40 @@ const AppContent = () => {
 
   return (
     <div className="min-h-screen bg-white dark:bg-gray-900 transition-colors duration-300">
-      <Navbar />
-      <main className="container mx-auto px-4 py-8">
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/about" element={<About />} />
-          <Route path="/skills" element={<Skills />} />
-          <Route path="/projects" element={<Projects />} />
-          <Route path="/experience" element={<Experience />} />
-          <Route path="/contact" element={<Contact />} />
-        </Routes>
-      </main>
-      <Footer />
-      <ThemeToggle />
-      <TerminalNav onThemeToggle={handleTerminalThemeToggle} />
-      <AchievementSystem />
+      <ErrorBoundary>
+        <Navbar />
+        <main className="container mx-auto px-4 py-8">
+          <AnimatePresence mode="wait">
+            <PageTransition key={location.pathname}>
+              <Suspense fallback={<PageLoader />}>
+                <Routes location={location}>
+                  <Route path="/" element={<Home />} />
+                  <Route path="/about" element={<About />} />
+                  <Route path="/skills" element={<Skills />} />
+                  <Route path="/projects" element={<Projects />} />
+                  <Route path="/experience" element={<Experience />} />
+                  <Route path="/contact" element={<Contact />} />
+                </Routes>
+              </Suspense>
+            </PageTransition>
+          </AnimatePresence>
+        </main>
+        <Footer />
+        <ThemeToggle />
+        <TerminalNav onThemeToggle={handleTerminalThemeToggle} />
+        <AchievementSystem />
+      </ErrorBoundary>
     </div>
   );
 };
 
 const App = () => {
   return (
-    <Router>
-      <AppContent />
-    </Router>
+    <ErrorBoundary>
+      <Router>
+        <AppContent />
+      </Router>
+    </ErrorBoundary>
   );
 };
 
